@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "/protocol";
+
+message Student{
+  int64 id = 1;
+  string name = 2;
+  int32 age = 3;
+}
+
+message SearchByID{
+  int64 id = 1;
+}
+
+message SearchByName{
+  string name = 1;
+}
+
+// Service definition for student
+service StudentService{
+  // GetStudentByID returns the student
+  // @param SearchByID id of the student to search for
+  // @return Student matching the id
+  rpc GetStudentByID(SearchByID) returns (Student) {}
+  // GetStudentsByName returns the student
+  // @param SearchByName name of the student to search for
+  // @return stream of Student matching the name
+  rpc GetStudentsByName(SearchByName) returns (stream Student) {}
+}
+
