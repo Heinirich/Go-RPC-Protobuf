@@ -8,6 +8,7 @@ import (
 	"github.com/Heinirich/grpc/protocol"
 	"github.com/Heinirich/grpc/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
 	"net"
@@ -21,14 +22,14 @@ type Configuration struct {
 	Dsn string `json:"dsn"`
 }
 
-var conf Configuration = Configuration{}
+var conf Configuration
 
 func runGrpcClient() {
 
 	// Listen for incoming connections on port 8085
 	fmt.Println("Server is listening on port 8085")
 
-	newClient, err := grpc.Dial("127.0.0.1:8085", grpc.WithInsecure())
+	newClient, err := grpc.NewClient("127.0.0.1:8085", grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
 		panic(err)
@@ -51,7 +52,10 @@ func runGrpcClient() {
 	fmt.Println("\nPlease enter your choice")
 
 	var input string
-	fmt.Scanln(&input)
+	_, err = fmt.Scanln(&input)
+	if err != nil {
+		return
+	}
 
 	if strings.EqualFold(input, "1") {
 		value := ""
@@ -96,7 +100,6 @@ func runGrpcClient() {
 		if err != nil {
 			return
 		}
-		fmt.Printf("Your id is:", value)
 
 		id, err := strconv.Atoi(value)
 
@@ -128,7 +131,7 @@ func runGrpcServer() {
 
 	// Check for errors
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 
 	fmt.Println("Server is listening on port 8085")
@@ -137,10 +140,12 @@ func runGrpcServer() {
 
 	newServer := grpc.NewServer(options...)
 
+	fmt.Println(conf.Dsn)
+
 	studentServer, err := server.GrpcServerInitializer(conf.Dn, conf.Dsn)
 
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 
 	// Register the server
@@ -155,7 +160,7 @@ func runGrpcServer() {
 }
 
 func main() {
-	file, err := os.Open("configuration/file.json")
+	file, err := os.Open("configuration/config.json")
 
 	if err != nil {
 		panic(err)
@@ -165,6 +170,11 @@ func main() {
 
 	// Allow us to decode the JSON file
 	err = json.NewDecoder(file).Decode(&configData)
+
+	conf = Configuration{
+		Dn:  configData["driverName"],
+		Dsn: configData["dsn"],
+	}
 
 	if err != nil {
 		panic(err)
